@@ -1,0 +1,98 @@
+#include <iostream>
+#include <vector>
+#include <unordered_map>
+#include <unordered_set>
+#include <queue>
+
+using namespace std;
+
+// Class to represent the social network
+class SocialNetwork {
+private:
+    unordered_map<string, unordered_set<string>> friendsMap;
+
+public:
+    // Function to add friends to the network
+    void addFriend(const string& person, const string& friendName) {
+        friendsMap[person].insert(friendName);
+        friendsMap[friendName].insert(person);
+    }
+
+    vector<string> getFriends(const string& person) {
+        vector<string> friendsList(friendsMap[person].begin(), friendsMap[person].end());
+        return friendsList;
+    }   
+    vector<string> getCommonFriends(const string& personA, const string& personB) {
+        vector<string> commonFriends;
+        unordered_set<string> friendsOfA = friendsMap[personA];
+        unordered_set<string> friendsOfB = friendsMap[personB];
+        for (const auto& friendA : friendsOfA) {
+            if (friendsOfB.count(friendA)) {
+                commonFriends.push_back(friendA);
+            }
+        }
+        return commonFriends;
+    }
+    int nthConnection(const string& startPerson, const string& targetPerson) {
+        if (friendsMap.find(startPerson) == friendsMap.end() || 
+            friendsMap.find(targetPerson) == friendsMap.end()) {
+            return -1; 
+        }
+
+        queue<pair<string, int>> q; 
+        unordered_set<string> visited;
+        q.push({startPerson, 0});
+        visited.insert(startPerson);
+
+        while (!q.empty()) {
+            pair<string, int> currentPair = q.front();
+            q.pop();
+            string current = currentPair.first;
+            int depth = currentPair.second;
+            if (current == targetPerson) {
+                return depth; 
+            }
+            for (const auto& friendName : friendsMap[current]) {
+                if (!visited.count(friendName)) {
+                    visited.insert(friendName);
+                    q.push({friendName, depth + 1});
+                }
+            }
+        }
+        return -1; 
+    }
+};
+
+int main() {
+    SocialNetwork sn;
+    sn.addFriend("Alice", "Bob");
+    sn.addFriend("Bob", "Janice");
+    sn.addFriend("Alice", "Charlie");
+    sn.addFriend("Charlie", "Diana");
+    sn.addFriend("Diana", "Janice");
+
+    cout << "Friends of Alice: ";
+    for (const auto& friendName : sn.getFriends("Alice")) {
+        cout << friendName << " ";
+    }
+    cout << endl;
+
+    cout << "Friends of Bob: ";
+    for (const auto& friendName : sn.getFriends("Bob")) {
+        cout << friendName << " ";
+    }
+    cout << endl;
+
+    cout << "Common friends of Alice and Bob: ";
+    for (const auto& friendName : sn.getCommonFriends("Alice", "Bob")) {
+        cout << friendName << " ";
+    }
+    cout << endl;
+
+    cout << "Connection(Bob, Janice): " << sn.nthConnection("Bob", "Janice") << endl; 
+    cout << "Connection(Alice, Janice): " << sn.nthConnection("Alice", "Janice") << endl; 
+    cout << "Connection(Alice, Diana): " << sn.nthConnection("Alice", "Diana") << endl; 
+    cout << "Connection(Alice, Unknown): " << sn.nthConnection("Alice", "Unknown") << endl; 
+    
+    return 0;
+}
