@@ -1,0 +1,94 @@
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <algorithm>
+#include <limits>
+
+struct Task {
+    int taskID;              
+    int timeRequired;        
+    std::vector<int> dependencies; 
+};
+
+class WorkflowScheduler {
+public:
+    WorkflowScheduler(const std::vector<Task>& taskList) : tasks(taskList) {
+        initializeGraph();
+        computeEarliestFinishTimes();
+        computeLatestFinishTimes();
+    }
+
+    int calculateEarliestCompletion() {
+        return *std::max_element(earliestFinishTimes.begin(), earliestFinishTimes.end());
+    }
+
+    int calculateLatestCompletion() {
+        return *std::max_element(latestFinishTimes.begin(), latestFinishTimes.end());
+    }
+
+private:
+    std::vector<Task> tasks;
+    std::vector<int> earliestFinishTimes; 
+    std::vector<int> latestFinishTimes; 
+    std::vector<int> earliestStartTimes; 
+    std::vector<int> latestStartTimes; 
+
+    void initializeGraph() {
+        int n = tasks.size();
+        earliestFinishTimes.resize(n, 0);
+        latestFinishTimes.resize(n, std::numeric_limits<int>::max());
+        earliestStartTimes.resize(n, 0);
+        latestStartTimes.resize(n, std::numeric_limits<int>::max());
+
+        for (int i = 0; i < n; i++) {
+            latestFinishTimes[i] = tasks[i].timeRequired;
+        }
+        earliestStartTimes[0] = 0; 
+    }
+
+    void computeEarliestFinishTimes() {
+        int n = tasks.size();
+        for (int i = 0; i < n; i++) {
+            for (int dependency : tasks[i].dependencies) {
+                earliestFinishTimes[i] = std::max(earliestFinishTimes[i], earliestStartTimes[dependency] + tasks[dependency].timeRequired);
+                earliestStartTimes[i] = earliestFinishTimes[i] - tasks[i].timeRequired;
+            }
+        }
+    }
+
+    void computeLatestFinishTimes() {
+        int n = tasks.size();
+        latestFinishTimes[n - 1] = calculateEarliestCompletion();
+        for (int i = n - 2; i >= 0; i--) {
+            for (int dependentTask : findNextTasks(i)) {
+                latestFinishTimes[i] = std::min(latestFinishTimes[i], latestStartTimes[dependentTask] - tasks[i].timeRequired);
+                latestStartTimes[i] = latestFinishTimes[i];
+            }
+        }
+    }
+
+    std::vector<int> findNextTasks(int taskId) {
+        std::vector<int> nextTasks;
+        for (int i = 0; i < tasks.size(); i++) {
+            if (std::find(tasks[i].dependencies.begin(), tasks[i].dependencies.end(), taskId) != tasks[i].dependencies.end()) {
+                nextTasks.push_back(i);
+            }
+        }
+        return nextTasks;
+    }
+};
+
+int main() { 
+    std::vector<Task> taskList = {
+        {0, 5, {}},               
+        {1, 3, {0}},              
+        {2, 2, {0}},              
+        {3, 4, {1, 2}},           
+    };
+
+    WorkflowScheduler scheduler(taskList);
+    std::cout << "Earliest completion time: " << scheduler.calculateEarliestCompletion() << " units\n";
+    std::cout << "Latest completion time: " << scheduler.calculateLatestCompletion() << " units\n";
+
+    return 0;
+}
